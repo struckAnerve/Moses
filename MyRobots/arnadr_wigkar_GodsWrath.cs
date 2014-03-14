@@ -1,3 +1,11 @@
+/*
+     |
+ ----|----
+     |
+     |
+     |
+*/
+
 // Access to standard .NET System
 using System;
 using System.Collections.Generic;
@@ -13,24 +21,24 @@ using Santom;
 
 namespace MyRobots
 {
-    public enum DriveState
+    public enum PilegrimageState
     {
 		DesertWander,
-        Follow,
+        Retribution,
+        Temptation,
 		Salvation
     }
 
 
-    class arnadr_wigkar_Moses : AdvancedRobot
+    class arnadr_wigkar_GodsWrath : AdvancedRobot
     {
-        private static DriveState _driveState = DriveState.DesertWander;
+        private static PilegrimageState _pilgrimageState = PilegrimageState.DesertWander;
 
         private double _maxEnergy;
 	    private string _badGuy = "";
 
-		private Vector2D _forwardFolehorn = new Vector2D();
+        private Vector2D _leftFolehorn = new Vector2D();
 		private Vector2D _rightFolehorn = new Vector2D();
-		private Vector2D _leftFolehorn = new Vector2D();
 
         private bool _reverseDriving = false, _lockedOnEnemy = false;
         public Random Rand = new Random();
@@ -69,14 +77,11 @@ namespace MyRobots
 			    behind = -1;
 
 	        var length = 150;
-	        if (_driveState == DriveState.Salvation || _driveState == DriveState.Follow)
+	        if (_pilgrimageState == PilegrimageState.Salvation || _pilgrimageState == PilegrimageState.Retribution)
 	            length = 0;
 
 			_leftFolehorn.X = (X + length * Math.Sin(HeadingRadians - (Math.PI / 5)) * behind);
 			_leftFolehorn.Y = (Y + length * Math.Cos(HeadingRadians - (Math.PI / 5))* behind);
-
-			_forwardFolehorn.X = X + length * Math.Sin(HeadingRadians) * behind;
-			_forwardFolehorn.Y = Y + length * Math.Cos(HeadingRadians) * behind;
 
 			_rightFolehorn.X = (X + length * Math.Sin(HeadingRadians + (Math.PI / 5)) * behind);
 			_rightFolehorn.Y = (Y + length * Math.Cos(HeadingRadians + (Math.PI / 5)) * behind);
@@ -85,15 +90,17 @@ namespace MyRobots
         // Robot event handler, when the robot sees another robot
 		public override void OnScannedRobot(ScannedRobotEvent e)
 		{
-
 			if (e.Energy == 0)
 			{
-				_driveState = DriveState.Salvation;
+				_pilgrimageState = PilegrimageState.Salvation;
 				_badGuy = e.Name;
                 SetAllColors(Color.White);
 			}
-			else if (e.Energy < 5)
-				_badGuy = "";
+			else if (e.Energy < 10)
+			{
+                _pilgrimageState = PilegrimageState.Temptation;
+                SetAllColors(Color.HotPink);
+			}
 
 			if (!e.Name.Equals(_badGuy))
 				return;
@@ -113,29 +120,28 @@ namespace MyRobots
 	    public override void OnPaint(IGraphics graphics)
 	    {
 
-	        if (_driveState == DriveState.Salvation)
+	        if (_pilgrimageState == PilegrimageState.Salvation)
 	        {
                 graphics.DrawLine(new Pen(Color.GhostWhite, 1f), new Point((int)X, (int)Y + 50), new Point((int)X, (int)Y + 100));
                 graphics.DrawLine(new Pen(Color.GhostWhite, 1f), new Point((int)X - 15, (int)Y + 85), new Point((int)X + 15, (int)Y + 85));
             
 	        }
 
-            //graphics.DrawLine(new Pen(Color.Chartreuse, 0.3f), new Point((int)_leftFolehorn.X, (int)_leftFolehorn.Y), new Point((int)X, (int)Y));
-            //graphics.DrawLine(new Pen(Color.Chocolate, 0.3f), new Point((int)_forwardFolehorn.X, (int)_forwardFolehorn.Y), new Point((int)X, (int)Y));
-            //graphics.DrawLine(new Pen(Color.Crimson, 0.3f), new Point((int)_rightFolehorn.X, (int)_rightFolehorn.Y), new Point((int)X, (int)Y));
-			//graphics.DrawLine(new Pen(Color.Chocolate, 0.3f), new Point((int)_enemy.Offset.X, (int)_enemy.Offset.Y), new Point((int)X, (int)Y)); //FillRectangle(new HatchBrush(new HatchStyle(),Color.BlueViolet, Color.Black), new Rectangle((int)_enemy.Bearing,10,100,100));
+            graphics.DrawLine(new Pen(Color.Chartreuse, 0.3f), new Point((int)_leftFolehorn.X, (int)_leftFolehorn.Y), new Point((int)X, (int)Y));
+            graphics.DrawLine(new Pen(Color.Crimson, 0.3f), new Point((int)_rightFolehorn.X, (int)_rightFolehorn.Y), new Point((int)X, (int)Y));
 	    }
 
 	    public void CheckStateAndChange()
         {
 	        if (_badGuy.Equals(""))
 	        {
-                _driveState = DriveState.DesertWander;
+                _pilgrimageState = PilegrimageState.DesertWander;
                 SetAllColors(Color.Goldenrod);
 	        }
-            if(!_badGuy.Equals("") && _driveState != DriveState.Salvation){
-                _driveState = DriveState.Follow;
+            if(!_badGuy.Equals("") && _pilgrimageState != PilegrimageState.Salvation && _pilgrimageState != PilegrimageState.Temptation){
+                _pilgrimageState = PilegrimageState.Retribution;
                 SetAllColors(Color.Red);
+                Console.WriteLine(_combo);
             }
         }
 
@@ -162,7 +168,7 @@ namespace MyRobots
 
         public void GunEnemyLock()
         {
-            if (_driveState == DriveState.DesertWander)
+            if (_pilgrimageState == PilegrimageState.DesertWander)
                 return;
 
             var gunturn = HeadingRadians + _enemy.BearingRadians - GunHeadingRadians + Beregner();
@@ -170,7 +176,7 @@ namespace MyRobots
             SetTurnGunRightRadians(Utils.NormalRelativeAngle(gunturn));
 
 
-            if (_driveState == DriveState.Follow)
+            if (_pilgrimageState == PilegrimageState.Retribution)
             {
                 int firePower = 1;
                 if (_enemy.Energy > 15)
@@ -196,17 +202,21 @@ namespace MyRobots
             double turn = 0;
             double speed = Rand.Next(1, 20);
 
-            switch (_driveState)
+            switch (_pilgrimageState)
             {
-                case (DriveState.Follow):
+                case (PilegrimageState.Retribution):
                     turn = HeadingRadians + _enemy.BearingRadians - HeadingRadians;
                     if (_enemy.Distance > 200 && _reverseDriving)
                         _reverseDriving = false;
                     speed = 100;
                     break;
-                case (DriveState.Salvation):
+                case (PilegrimageState.Salvation):
                     turn = HeadingRadians + _enemy.BearingRadians - HeadingRadians;
 		            SetAhead((_enemy.Distance/20) + 2);
+                    break;
+                case (PilegrimageState.Temptation):
+                    turn = HeadingRadians + _enemy.BearingRadians - HeadingRadians + Math.PI/2;
+                    speed = 100;
                     break;
             }
 
@@ -222,10 +232,9 @@ namespace MyRobots
 			if (_rightFolehorn.Y < 18 || _rightFolehorn.Y > (BattleFieldHeight - 18))
 				SetTurnLeft(Rules.MAX_TURN_RATE);
 
-            if (_driveState == DriveState.Salvation)
+            if (_pilgrimageState == PilegrimageState.Salvation)
                 return;
 
-            Console.WriteLine(speed);
             if (!_reverseDriving)
                 SetAhead(speed);
             else
@@ -259,7 +268,7 @@ namespace MyRobots
         public override void OnRoundEnded(RoundEndedEvent evnt)
         {
             _badGuy = "";
-            _driveState = DriveState.DesertWander;
+            _pilgrimageState = PilegrimageState.DesertWander;
         }
     }
 }
