@@ -17,7 +17,7 @@ namespace MyRobots
     {
 		DesertWander,
         Follow,
-		Poke
+		Salvation
     }
 
 
@@ -36,6 +36,8 @@ namespace MyRobots
         public Random Rand = new Random();
         private EnemyData _enemy = new EnemyData();
 
+        private int _combo;
+
 
         public override void Run()
         {
@@ -49,12 +51,9 @@ namespace MyRobots
 
 				if (RadarTurnRemaining == 0.0)
 					SetTurnRadarRightRadians(Double.PositiveInfinity);
-
-				if (!_badGuy.Equals(""))
-				{
-					GunEnemyLock();
-					CheckStateAndChange();
-				}
+				
+                CheckStateAndChange();
+				GunEnemyLock();
 
 				TankMovement();
                 Execute();
@@ -70,7 +69,7 @@ namespace MyRobots
 			    behind = -1;
 
 	        var length = 150;
-	        if (_driveState == DriveState.Poke || _driveState == DriveState.Follow)
+	        if (_driveState == DriveState.Salvation || _driveState == DriveState.Follow)
 	            length = 0;
 
 			_leftFolehorn.X = (X + length * Math.Sin(HeadingRadians - (Math.PI / 5)) * behind);
@@ -89,10 +88,11 @@ namespace MyRobots
 
 			if (e.Energy == 0)
 			{
-				_driveState = DriveState.Poke;
+				_driveState = DriveState.Salvation;
 				_badGuy = e.Name;
+                SetAllColors(Color.White);
 			}
-			else if (e.Energy < 7)
+			else if (e.Energy < 5)
 				_badGuy = "";
 
 			if (!e.Name.Equals(_badGuy))
@@ -112,27 +112,31 @@ namespace MyRobots
 
 	    public override void OnPaint(IGraphics graphics)
 	    {
-			graphics.DrawLine(new Pen(Color.Chartreuse, 0.3f), new Point((int)_leftFolehorn.X, (int)_leftFolehorn.Y), new Point((int)X, (int)Y));
-			graphics.DrawLine(new Pen(Color.Chocolate, 0.3f), new Point((int)_forwardFolehorn.X, (int)_forwardFolehorn.Y), new Point((int)X, (int)Y));
-			graphics.DrawLine(new Pen(Color.Crimson, 0.3f), new Point((int)_rightFolehorn.X, (int)_rightFolehorn.Y), new Point((int)X, (int)Y));
+
+	        if (_driveState == DriveState.Salvation)
+	        {
+                graphics.DrawLine(new Pen(Color.GhostWhite, 1f), new Point((int)X, (int)Y + 50), new Point((int)X, (int)Y + 100));
+                graphics.DrawLine(new Pen(Color.GhostWhite, 1f), new Point((int)X - 15, (int)Y + 85), new Point((int)X + 15, (int)Y + 85));
+            
+	        }
+
+            //graphics.DrawLine(new Pen(Color.Chartreuse, 0.3f), new Point((int)_leftFolehorn.X, (int)_leftFolehorn.Y), new Point((int)X, (int)Y));
+            //graphics.DrawLine(new Pen(Color.Chocolate, 0.3f), new Point((int)_forwardFolehorn.X, (int)_forwardFolehorn.Y), new Point((int)X, (int)Y));
+            //graphics.DrawLine(new Pen(Color.Crimson, 0.3f), new Point((int)_rightFolehorn.X, (int)_rightFolehorn.Y), new Point((int)X, (int)Y));
 			//graphics.DrawLine(new Pen(Color.Chocolate, 0.3f), new Point((int)_enemy.Offset.X, (int)_enemy.Offset.Y), new Point((int)X, (int)Y)); //FillRectangle(new HatchBrush(new HatchStyle(),Color.BlueViolet, Color.Black), new Rectangle((int)_enemy.Bearing,10,100,100));
 	    }
 
 	    public void CheckStateAndChange()
         {
-            if(_badGuy.Equals(""))
+	        if (_badGuy.Equals(""))
+	        {
                 _driveState = DriveState.DesertWander;
-            if(!_badGuy.Equals("") && _driveState != DriveState.Poke)
+                SetAllColors(Color.Goldenrod);
+	        }
+            if(!_badGuy.Equals("") && _driveState != DriveState.Salvation){
                 _driveState = DriveState.Follow;
-
-            /*
-            if (Energy > (_maxEnergy / 3) * 2)
-                _driveState = DriveState.Follow;
-            else if (Energy > (_maxEnergy / 3))
-				_driveState = DriveState.Follow;
-            else
-                _driveState = DriveState.Follow;
-             * */
+                SetAllColors(Color.Red);
+            }
         }
 
         public double Beregner()
@@ -145,14 +149,6 @@ namespace MyRobots
             var altering = (_enemy.Bearing / 100);
 
             var enemHead = _enemy.Heading;
-            //if (enemHead > 180)
-            //enemHead = enemHead + (enemHead%180);
-
-
-//            Console.WriteLine("Bullettime: " + bulletTime + ". katetLength: " + katetLength
-//                + ". Hypotenus: " + hyp + ". Grader: " + grader + ". Enemy Bearing: " + _enemy.Bearing + ".\nEnemy heading: " + enemHead);
-
-            //			Console.WriteLine(enemHead + " = " + (-enemHead) + " + " + (enemHead % 180) + " = " + (-enemHead + (enemHead % 180 + enemHead)));
             if (_enemy.Bearing < 1 && _enemy.Bearing > -1)
                 return 0;
 
@@ -173,8 +169,23 @@ namespace MyRobots
             IsAdjustRadarForGunTurn = true;
             SetTurnGunRightRadians(Utils.NormalRelativeAngle(gunturn));
 
-			if(_driveState == DriveState.Follow)
-				Fire(1);
+
+            if (_driveState == DriveState.Follow)
+            {
+                int firePower = 1;
+                if (_enemy.Energy > 15)
+                {
+                    if (_enemy.Distance < 55)
+                        firePower = 3;
+                    else
+                    {
+                        firePower = _combo;
+                        if (_combo >= 3)
+                            _combo = 1;
+                    }
+                }
+                Fire(firePower);
+            }
         }
 
         public void TankMovement()
@@ -183,6 +194,7 @@ namespace MyRobots
             IsAdjustRadarForRobotTurn = true;
 
             double turn = 0;
+            double speed = Rand.Next(1, 20);
 
             switch (_driveState)
             {
@@ -190,16 +202,16 @@ namespace MyRobots
                     turn = HeadingRadians + _enemy.BearingRadians - HeadingRadians;
                     if (_enemy.Distance > 200 && _reverseDriving)
                         _reverseDriving = false;
+                    speed = 100;
                     break;
-                case (DriveState.Poke):
+                case (DriveState.Salvation):
                     turn = HeadingRadians + _enemy.BearingRadians - HeadingRadians;
-		            SetAhead(_enemy.Distance + 4);
+		            SetAhead((_enemy.Distance/20) + 2);
                     break;
             }
 
             SetTurnRightRadians(Utils.NormalRelativeAngle(turn));
 
-			Console.WriteLine(_driveState);
 			if (_leftFolehorn.X < 18 || _leftFolehorn.X > (BattleFieldWidth - 18))
 				SetTurnRight(Rules.MAX_TURN_RATE);
 			if (_leftFolehorn.Y < 18 || _leftFolehorn.Y > (BattleFieldHeight - 18))
@@ -210,13 +222,14 @@ namespace MyRobots
 			if (_rightFolehorn.Y < 18 || _rightFolehorn.Y > (BattleFieldHeight - 18))
 				SetTurnLeft(Rules.MAX_TURN_RATE);
 
-            if (_driveState == DriveState.Poke)
+            if (_driveState == DriveState.Salvation)
                 return;
 
+            Console.WriteLine(speed);
             if (!_reverseDriving)
-                SetAhead(Rand.Next(1, 30));
+                SetAhead(speed);
             else
-                SetAhead(-Rand.Next(1, 30));
+                SetAhead(-speed);
         }
 
 	    public override void OnHitByBullet(HitByBulletEvent bullet)
@@ -235,8 +248,13 @@ namespace MyRobots
 
 	    public override void OnBulletHit(BulletHitEvent evnt)
 	    {
-
+	        _combo++;
 	    }
+
+        public override void OnBulletMissed(BulletMissedEvent evnt)
+        {
+            _combo = 1;
+        }
 
         public override void OnRoundEnded(RoundEndedEvent evnt)
         {
