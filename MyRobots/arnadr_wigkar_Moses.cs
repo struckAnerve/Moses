@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing.Drawing2D;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Drawing;
@@ -12,8 +13,6 @@ using Santom;
 
 namespace MyRobots
 {
-
-
     public enum DriveState
     {
 		DesertWander,
@@ -21,17 +20,10 @@ namespace MyRobots
 		Poke
     }
 
-    public enum GunState
-    {
-        HasTarget,
-        NeedTarget
-    }
-
 
     class arnadr_wigkar_Moses : AdvancedRobot
     {
-        private static DriveState _driveState = DriveState.Follow;
-        private static GunState _gunState = GunState.NeedTarget;
+        private static DriveState _driveState = DriveState.DesertWander;
 
         private double _maxEnergy;
 	    private string _badGuy = "";
@@ -56,15 +48,10 @@ namespace MyRobots
 
 
 				if (RadarTurnRemaining == 0.0)
-				{
 					SetTurnRadarRightRadians(Double.PositiveInfinity);
-					_gunState = GunState.NeedTarget;
-				}
 
 				if (!_badGuy.Equals(""))
 				{
-
-
 					GunEnemyLock();
 					CheckStateAndChange();
 				}
@@ -82,7 +69,9 @@ namespace MyRobots
 		    if (_reverseDriving)
 			    behind = -1;
 
-		    const int length = 150;
+	        var length = 150;
+	        if (_driveState == DriveState.Poke || _driveState == DriveState.Follow)
+	            length = 0;
 
 			_leftFolehorn.X = (X + length * Math.Sin(HeadingRadians - (Math.PI / 5)) * behind);
 			_leftFolehorn.Y = (Y + length * Math.Cos(HeadingRadians - (Math.PI / 5))* behind);
@@ -114,8 +103,6 @@ namespace MyRobots
 								new Vector2D(X + e.Distance * Math.Sin(absBearing), Y + e.Distance * Math.Cos(absBearing)),
 								new Point2D(0, 0));
 
-			_gunState = GunState.HasTarget;
-
 			var angleToEnemy = HeadingRadians + e.BearingRadians;
 			var radarTurn = Utils.NormalRelativeAngle(angleToEnemy - RadarHeadingRadians);
 			var extraTurn = Math.Min(Math.Atan(36.0 / e.Distance), Rules.RADAR_TURN_RATE_RADIANS);
@@ -133,12 +120,19 @@ namespace MyRobots
 
 	    public void CheckStateAndChange()
         {
+            if(_badGuy.Equals(""))
+                _driveState = DriveState.DesertWander;
+            if(!_badGuy.Equals("") && _driveState != DriveState.Poke)
+                _driveState = DriveState.Follow;
+
+            /*
             if (Energy > (_maxEnergy / 3) * 2)
                 _driveState = DriveState.Follow;
             else if (Energy > (_maxEnergy / 3))
 				_driveState = DriveState.Follow;
             else
                 _driveState = DriveState.Follow;
+             * */
         }
 
         public double Beregner()
@@ -172,22 +166,15 @@ namespace MyRobots
 
         public void GunEnemyLock()
         {
+            if (_driveState == DriveState.DesertWander)
+                return;
 
-            switch (_gunState)
-            {
-                case (GunState.NeedTarget):
-                    break;
-                case (GunState.HasTarget):
-                    var gunturn = HeadingRadians + _enemy.BearingRadians - GunHeadingRadians + Beregner();
-                    IsAdjustRadarForGunTurn = true;
-                    SetTurnGunRightRadians(Utils.NormalRelativeAngle(gunturn));
+            var gunturn = HeadingRadians + _enemy.BearingRadians - GunHeadingRadians + Beregner();
+            IsAdjustRadarForGunTurn = true;
+            SetTurnGunRightRadians(Utils.NormalRelativeAngle(gunturn));
 
-					if(_driveState != DriveState.Poke)
-						Fire(1);
-
-                    break;
-            }
-
+			if(_driveState == DriveState.Follow)
+				Fire(1);
         }
 
         public void TankMovement()
@@ -197,55 +184,51 @@ namespace MyRobots
 
             double turn = 0;
 
-
-
             switch (_driveState)
             {
                 case (DriveState.Follow):
                     turn = HeadingRadians + _enemy.BearingRadians - HeadingRadians;
+                    if (_enemy.Distance > 200 && _reverseDriving)
+                        _reverseDriving = false;
                     break;
                 case (DriveState.Poke):
                     turn = HeadingRadians + _enemy.BearingRadians - HeadingRadians;
-		            //SetAhead(0.2f);
+		            SetAhead(_enemy.Distance + 4);
                     break;
             }
 
-
-	        if (_enemy.Distance > 200 && _reverseDriving)
-		        _reverseDriving = false;
-
             SetTurnRightRadians(Utils.NormalRelativeAngle(turn));
 
-			if(_driveState != DriveState.Poke){
-				if (_leftFolehorn.X < 18 || _leftFolehorn.X > (BattleFieldWidth - 18))
-					SetTurnRight(Rules.MAX_TURN_RATE);
-				if (_leftFolehorn.Y < 18 || _leftFolehorn.Y > (BattleFieldHeight - 18))
-					SetTurnRight(Rules.MAX_TURN_RATE);
+			Console.WriteLine(_driveState);
+			if (_leftFolehorn.X < 18 || _leftFolehorn.X > (BattleFieldWidth - 18))
+				SetTurnRight(Rules.MAX_TURN_RATE);
+			if (_leftFolehorn.Y < 18 || _leftFolehorn.Y > (BattleFieldHeight - 18))
+				SetTurnRight(Rules.MAX_TURN_RATE);
 
-				if (_rightFolehorn.X < 18 || _rightFolehorn.X > (BattleFieldWidth - 18))
-					SetTurnLeft(Rules.MAX_TURN_RATE);
-				if (_rightFolehorn.Y < 18 || _rightFolehorn.Y > (BattleFieldHeight - 18))
-					SetTurnLeft(Rules.MAX_TURN_RATE);
-			}
+			if (_rightFolehorn.X < 18 || _rightFolehorn.X > (BattleFieldWidth - 18))
+				SetTurnLeft(Rules.MAX_TURN_RATE);
+			if (_rightFolehorn.Y < 18 || _rightFolehorn.Y > (BattleFieldHeight - 18))
+				SetTurnLeft(Rules.MAX_TURN_RATE);
+
+            if (_driveState == DriveState.Poke)
+                return;
+
             if (!_reverseDriving)
                 SetAhead(Rand.Next(1, 30));
             else
                 SetAhead(-Rand.Next(1, 30));
-            //			CheckForWalls();
         }
-
 
 	    public override void OnHitByBullet(HitByBulletEvent bullet)
 	    {
 			_badGuy = bullet.Name;
 	    }
 
-	    public override void OnHitWall(HitWallEvent evnt)
-	    {
-			_reverseDriving = !_reverseDriving;
-	    }
+        public override void OnHitWall(HitWallEvent evnt)
+        {_reverseDriving = !_reverseDriving;
+        }
 
-	    public override void OnHitRobot(HitRobotEvent evnt)
+        public override void OnHitRobot(HitRobotEvent evnt)
 	    {
 			_reverseDriving = !_reverseDriving;
 	    }
@@ -254,5 +237,11 @@ namespace MyRobots
 	    {
 
 	    }
+
+        public override void OnRoundEnded(RoundEndedEvent evnt)
+        {
+            _badGuy = "";
+            _driveState = DriveState.DesertWander;
+        }
     }
 }
