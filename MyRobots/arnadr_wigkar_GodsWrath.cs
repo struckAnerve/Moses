@@ -31,7 +31,6 @@ namespace MyRobots
 		Salvation
     }
 
-
     class arnadr_wigkar_GodsWrath : AdvancedRobot
     {
         private static PilgrimageState _pilgrimageState = PilgrimageState.DesertWander;
@@ -47,6 +46,7 @@ namespace MyRobots
         private bool _reverseDriving = false, _lockedOnEnemy = false;
         public Random Rand = new Random();
         private EnemyData _enemy = new EnemyData();
+		private List<string> _enemyNames = new List<string>(); 
 
         private int _combo;
 
@@ -57,8 +57,7 @@ namespace MyRobots
 
             do
             {
-
-	            UpdateFol();
+	            UpdateAntennas();
 
 				if (RadarTurnRemaining == 0.0)
 					SetTurnRadarRightRadians(Double.PositiveInfinity);
@@ -70,8 +69,8 @@ namespace MyRobots
                 Execute();
             } while (true);
         }
-		
-	    private void UpdateFol()
+
+		private void UpdateAntennas()
 	    {
 
 		    var behind = 1;
@@ -105,6 +104,11 @@ namespace MyRobots
         // Robot event handler, when the robot sees another robot
 		public override void OnScannedRobot(ScannedRobotEvent e)
 		{
+
+			AddNameToListIfDoesntExist(e.Name);
+
+			Console.WriteLine(_enemyNames.Count);
+
 			if (e.Energy == 0)
 			{
 				_pilgrimageState = PilgrimageState.Salvation;
@@ -119,7 +123,7 @@ namespace MyRobots
 
 		    if (!e.Name.Equals(_badGuy))
 		    {
-                if (_timesPassed >= 20)
+                if (_timesPassed > _enemyNames.Count)
                 {
                     _badGuy = "";
                     _timesPassed = 0;
@@ -128,6 +132,9 @@ namespace MyRobots
 		            _timesPassed++;
                 return;
 		    }
+
+			_timesPassed = 0;
+
 			var absBearing = HeadingRadians + e.BearingRadians;
 			_enemy.SetEnemyData(Time,
 								e,
@@ -141,6 +148,16 @@ namespace MyRobots
 			SetTurnRadarRightRadians(radarTurn);
 		}
 
+	    private void AddNameToListIfDoesntExist(string newName)
+	    {
+		    if (_enemyNames.Any(enemyName => enemyName.Equals(newName)))
+		    {
+			    return;
+		    }
+
+		    _enemyNames.Add(newName);
+	    }
+
 	    public override void OnPaint(IGraphics graphics)
 	    {
 
@@ -151,9 +168,9 @@ namespace MyRobots
             
 	        }
 
-            graphics.DrawLine(new Pen(Color.Chartreuse, 0.3f), new Point((int)_leftAntennae.X, (int)_leftAntennae.Y), new Point((int)X, (int)Y));
-            graphics.DrawLine(new Pen(Color.Crimson, 0.3f), new Point((int)_rightAntennae.X, (int)_rightAntennae.Y), new Point((int)X, (int)Y));
-			graphics.DrawLine(new Pen(Color.DarkBlue, 0.3f), new Point((int)_frontAntennae.X, (int)_frontAntennae.Y), new Point((int)X, (int)Y));
+//          graphics.DrawLine(new Pen(Color.Chartreuse, 0.3f), new Point((int)_leftAntennae.X, (int)_leftAntennae.Y), new Point((int)X, (int)Y));
+//          graphics.DrawLine(new Pen(Color.Crimson, 0.3f), new Point((int)_rightAntennae.X, (int)_rightAntennae.Y), new Point((int)X, (int)Y));
+//			graphics.DrawLine(new Pen(Color.DarkBlue, 0.3f), new Point((int)_frontAntennae.X, (int)_frontAntennae.Y), new Point((int)X, (int)Y));
 
 	    }
 
@@ -186,10 +203,8 @@ namespace MyRobots
 
             var altering = (_enemy.Bearing / 100);
 
-            var enemHead = _enemy.Heading;
-            if (_enemy.Bearing < 1 && _enemy.Bearing > -1)
+	        if (_enemy.Bearing < 1 && _enemy.Bearing > -1)
                 return 0;
-
 
             if (_enemy.Bearing < 0)
                 return -grader + altering;
