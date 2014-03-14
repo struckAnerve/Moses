@@ -21,7 +21,7 @@ using Robocode.Util;
 // The namespace with your initials, in this case FNL is the initials
 using Santom;
 
-namespace MyRobots
+namespace PG4500_2014_Innlevering1
 {
     public enum PilgrimageState
     {
