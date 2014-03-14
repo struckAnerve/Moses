@@ -40,8 +40,9 @@ namespace MyRobots
         private string _previousBadGuy = "";
         private bool _hitThisFrame = false;
 
-        private Vector2D _leftFolehorn = new Vector2D();
-		private Vector2D _rightFolehorn = new Vector2D();
+		private Vector2D _leftAntennae = new Vector2D();
+		private Vector2D _frontAntennae = new Vector2D();
+		private Vector2D _rightAntennae = new Vector2D();
 
         private bool _reverseDriving = false, _lockedOnEnemy = false;
         public Random Rand = new Random();
@@ -79,14 +80,26 @@ namespace MyRobots
 			    behind = -1;
 
 	        var length = 150;
-	        if (_pilgrimageState == PilegrimageState.Salvation || _pilgrimageState == PilegrimageState.Retribution)
-	            length = 0;
 
-			_leftFolehorn.X = (X + length * Math.Sin(HeadingRadians - (Math.PI / 5)) * behind);
-			_leftFolehorn.Y = (Y + length * Math.Cos(HeadingRadians - (Math.PI / 5))* behind);
+			if (_pilgrimageState == PilegrimageState.Temptation)
+			{
+				length = 50;
 
-			_rightFolehorn.X = (X + length * Math.Sin(HeadingRadians + (Math.PI / 5)) * behind);
-			_rightFolehorn.Y = (Y + length * Math.Cos(HeadingRadians + (Math.PI / 5)) * behind);
+				_frontAntennae.X = (X + length * Math.Sin(HeadingRadians - (Math.PI)) * -behind);
+				_frontAntennae.Y = (Y + length * Math.Cos(HeadingRadians - (Math.PI)) * -behind);
+				length = 0;
+			}
+
+		    if (_pilgrimageState == PilegrimageState.Salvation || _pilgrimageState == PilegrimageState.Retribution)
+		    {
+				length = 0;
+		    }
+
+			_leftAntennae.X = (X + length * Math.Sin(HeadingRadians - (Math.PI / 5)) * behind);
+			_leftAntennae.Y = (Y + length * Math.Cos(HeadingRadians - (Math.PI / 5))* behind);
+
+			_rightAntennae.X = (X + length * Math.Sin(HeadingRadians + (Math.PI / 5)) * behind);
+			_rightAntennae.Y = (Y + length * Math.Cos(HeadingRadians + (Math.PI / 5)) * behind);
 	    }
 
         // Robot event handler, when the robot sees another robot
@@ -138,8 +151,10 @@ namespace MyRobots
             
 	        }
 
-            graphics.DrawLine(new Pen(Color.Chartreuse, 0.3f), new Point((int)_leftFolehorn.X, (int)_leftFolehorn.Y), new Point((int)X, (int)Y));
-            graphics.DrawLine(new Pen(Color.Crimson, 0.3f), new Point((int)_rightFolehorn.X, (int)_rightFolehorn.Y), new Point((int)X, (int)Y));
+            graphics.DrawLine(new Pen(Color.Chartreuse, 0.3f), new Point((int)_leftAntennae.X, (int)_leftAntennae.Y), new Point((int)X, (int)Y));
+            graphics.DrawLine(new Pen(Color.Crimson, 0.3f), new Point((int)_rightAntennae.X, (int)_rightAntennae.Y), new Point((int)X, (int)Y));
+			graphics.DrawLine(new Pen(Color.DarkBlue, 0.3f), new Point((int)_frontAntennae.X, (int)_frontAntennae.Y), new Point((int)X, (int)Y));
+
 	    }
 
 	    public void CheckStateAndChange()
@@ -233,15 +248,20 @@ namespace MyRobots
 
             SetTurnRightRadians(Utils.NormalRelativeAngle(turn));
 
-			if (_leftFolehorn.X < 18 || _leftFolehorn.X > (BattleFieldWidth - 18))
+			if (_leftAntennae.X < 18 || _leftAntennae.X > (BattleFieldWidth - 18))
 				SetTurnRight(Rules.MAX_TURN_RATE);
-			if (_leftFolehorn.Y < 18 || _leftFolehorn.Y > (BattleFieldHeight - 18))
+			if (_leftAntennae.Y < 18 || _leftAntennae.Y > (BattleFieldHeight - 18))
 				SetTurnRight(Rules.MAX_TURN_RATE);
 
-			if (_rightFolehorn.X < 18 || _rightFolehorn.X > (BattleFieldWidth - 18))
+			if (_rightAntennae.X < 18 || _rightAntennae.X > (BattleFieldWidth - 18))
 				SetTurnLeft(Rules.MAX_TURN_RATE);
-			if (_rightFolehorn.Y < 18 || _rightFolehorn.Y > (BattleFieldHeight - 18))
+			if (_rightAntennae.Y < 18 || _rightAntennae.Y > (BattleFieldHeight - 18))
 				SetTurnLeft(Rules.MAX_TURN_RATE);
+
+			if (_frontAntennae.X < 18 || _frontAntennae.X > (BattleFieldWidth - 18))
+				_reverseDriving = !_reverseDriving;
+			if (_frontAntennae.Y < 18 || _frontAntennae.Y > (BattleFieldHeight - 18))
+				_reverseDriving = !_reverseDriving;
 
             if (_pilgrimageState == PilegrimageState.Salvation)
                 return;
@@ -260,7 +280,8 @@ namespace MyRobots
 	    }
 
         public override void OnHitWall(HitWallEvent evnt)
-        {_reverseDriving = !_reverseDriving;
+        {
+			_reverseDriving = !_reverseDriving;
         }
 
         public override void OnHitRobot(HitRobotEvent evnt)
