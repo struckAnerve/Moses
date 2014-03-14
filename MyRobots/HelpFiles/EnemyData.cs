@@ -7,7 +7,6 @@ namespace Santom
 	public class EnemyData
 	{
 		public long Time { get; set; }  // Time (turn) of currently stored scan.
-		public List<BulletData> Bullets { get; set; }  // Queue of BulletData.
 
 		// Enemy stuff
 		public string Name { get; set; }  // Name of enemy.
@@ -25,7 +24,6 @@ namespace Santom
 
 		public EnemyData() 
 		{
-			Bullets = new List<BulletData>();
 			Offset = new Vector2D();
 			Position = new Point2D();
 		}
@@ -34,7 +32,6 @@ namespace Santom
 		public void Clear() 
 		{ 
 			Time = 0;
-			Bullets.Clear();
 			Name = null;
 			Bearing = 0.0;
 			Distance = 0.0;
