@@ -102,6 +102,7 @@ namespace MyRobots
 			{
 				_driveState = DriveState.Poke;
 				_badGuy = e.Name;
+                SetAllColors(Color.LawnGreen);
 			}
 			else if (e.Energy < 7)
 				_badGuy = "";
