@@ -34,8 +34,10 @@ namespace MyRobots
     {
         private static PilegrimageState _pilgrimageState = PilegrimageState.DesertWander;
 
-        private double _maxEnergy;
-	    private string _badGuy = "";
+        private int _timesPassed = 0;
+        private string _badGuy = "";
+        private string _previousBadGuy = "";
+        private bool _hitThisFrame = false;
 
         private Vector2D _leftFolehorn = new Vector2D();
 		private Vector2D _rightFolehorn = new Vector2D();
@@ -49,7 +51,6 @@ namespace MyRobots
 
         public override void Run()
         {
-            _maxEnergy = Energy;
 
             do
             {
@@ -102,8 +103,17 @@ namespace MyRobots
                 SetAllColors(Color.HotPink);
 			}
 
-			if (!e.Name.Equals(_badGuy))
-				return;
+		    if (!e.Name.Equals(_badGuy))
+		    {
+                Console.WriteLine(_timesPassed);
+		        if (_timesPassed >= 20)
+		        {
+                    _badGuy = "";
+		            _timesPassed = 0;
+		        }
+		        _timesPassed++;
+                return;
+		    }
 			var absBearing = HeadingRadians + e.BearingRadians;
 			_enemy.SetEnemyData(Time,
 								e,
@@ -138,10 +148,10 @@ namespace MyRobots
                 _pilgrimageState = PilegrimageState.DesertWander;
                 SetAllColors(Color.Goldenrod);
 	        }
-            if(!_badGuy.Equals("") && _pilgrimageState != PilegrimageState.Salvation && _pilgrimageState != PilegrimageState.Temptation){
+            if (_hitThisFrame){
                 _pilgrimageState = PilegrimageState.Retribution;
                 SetAllColors(Color.Red);
-                Console.WriteLine(_combo);
+                _hitThisFrame = false;
             }
         }
 
@@ -216,7 +226,7 @@ namespace MyRobots
                     break;
                 case (PilegrimageState.Temptation):
                     turn = HeadingRadians + _enemy.BearingRadians - HeadingRadians + Math.PI/2;
-                    speed = 100;
+                    speed = Rand.Next(10, 40);
                     break;
             }
 
@@ -243,7 +253,9 @@ namespace MyRobots
 
 	    public override void OnHitByBullet(HitByBulletEvent bullet)
 	    {
+	        _hitThisFrame = true;
 			_badGuy = bullet.Name;
+            _timesPassed = 0;
 	    }
 
         public override void OnHitWall(HitWallEvent evnt)
@@ -269,6 +281,8 @@ namespace MyRobots
         {
             _badGuy = "";
             _pilgrimageState = PilegrimageState.DesertWander;
+            _hitThisFrame = false;
+            _timesPassed = 0;
         }
     }
 }

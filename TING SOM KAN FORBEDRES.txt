@@ -1,0 +1,9 @@
+Vi MÅ skrive dokument
+
+
+At roboten gjør en liten dodge akkurat når han starter på "salvation" (fordi bots gjerne sikter og skyter mot oss, og hvis vi går rett mot dem for salvation treffer de og blir ikke lenger disablet)
+
+Opprydding - navneendringer, evt. noen grad av refaktorering
+
+
+KULE TING!!
