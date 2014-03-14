@@ -7,6 +7,7 @@
 |     |__||      \________|    \_______/    |_______/     \________/          \_____/   \_____/      |__| \__|   |__|      |__|      |__|       |__|     |__|     ||__|     |
 \*________________________________________________________________________________________________________________________________________________________________________*/
 
+
 // Access to standard .NET System
 using System;
 using System.Collections.Generic;
@@ -37,7 +38,6 @@ namespace MyRobots
 
         private int _timesPassed = 0;
         private string _badGuy = "";
-        private string _previousBadGuy = "";
         private bool _hitThisFrame = false;
 
 		private Vector2D _leftAntennae = new Vector2D();
@@ -53,12 +53,12 @@ namespace MyRobots
 
         public override void Run()
         {
+            SetAllColors(Color.Goldenrod);
 
             do
             {
 
 	            UpdateFol();
-
 
 				if (RadarTurnRemaining == 0.0)
 					SetTurnRadarRightRadians(Double.PositiveInfinity);
@@ -111,7 +111,7 @@ namespace MyRobots
 				_badGuy = e.Name;
                 SetAllColors(Color.White);
 			}
-			else if (e.Energy < 10)
+			else if (e.Energy < 10 && e.Name.Equals(_badGuy))
 			{
                 _pilgrimageState = PilegrimageState.Temptation;
                 SetAllColors(Color.HotPink);
@@ -119,13 +119,14 @@ namespace MyRobots
 
 		    if (!e.Name.Equals(_badGuy))
 		    {
-                Console.WriteLine(_timesPassed);
-		        if (_timesPassed >= 20)
-		        {
+                if (_timesPassed >= 20)
+                {
                     _badGuy = "";
-		            _timesPassed = 0;
-		        }
-		        _timesPassed++;
+                    _timesPassed = 0;
+                    Console.WriteLine("Wander");
+                }
+                if(!_badGuy.Equals(""))
+		            _timesPassed++;
                 return;
 		    }
 			var absBearing = HeadingRadians + e.BearingRadians;
@@ -159,12 +160,12 @@ namespace MyRobots
 
 	    public void CheckStateAndChange()
         {
-	        if (_badGuy.Equals(""))
+	        if (_badGuy.Equals("") && _pilgrimageState != PilegrimageState.DesertWander)
 	        {
                 _pilgrimageState = PilegrimageState.DesertWander;
                 SetAllColors(Color.Goldenrod);
 	        }
-            if (_hitThisFrame){
+            if (_hitThisFrame && _pilgrimageState != PilegrimageState.Retribution){
                 _pilgrimageState = PilegrimageState.Retribution;
                 SetAllColors(Color.Red);
                 _hitThisFrame = false;
