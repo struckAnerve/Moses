@@ -34,8 +34,11 @@ namespace MyRobots
         private static GunState _gunState = GunState.NeedTarget;
 
         private double _maxEnergy;
-
 	    private string _badGuy = "";
+
+		private Vector2D _forwardFolehorn = new Vector2D();
+		private Vector2D _rightFolehorn = new Vector2D();
+		private Vector2D _leftFolehorn = new Vector2D();
 
         private bool _reverseDriving = false, _lockedOnEnemy = false;
         public Random Rand = new Random();
@@ -48,6 +51,10 @@ namespace MyRobots
 
             do
             {
+
+	            UpdateFol();
+
+
 				if (RadarTurnRemaining == 0.0)
 				{
 					SetTurnRadarRightRadians(Double.PositiveInfinity);
@@ -66,6 +73,26 @@ namespace MyRobots
                 Execute();
             } while (true);
         }
+		
+	    private void UpdateFol()
+	    {
+
+		    var behind = 1;
+
+		    if (_reverseDriving)
+			    behind = -1;
+
+		    const int length = 150;
+
+			_leftFolehorn.X = (X + length * Math.Sin(HeadingRadians - (Math.PI / 5)) * behind);
+			_leftFolehorn.Y = (Y + length * Math.Cos(HeadingRadians - (Math.PI / 5))* behind);
+
+			_forwardFolehorn.X = X + length * Math.Sin(HeadingRadians) * behind;
+			_forwardFolehorn.Y = Y + length * Math.Cos(HeadingRadians) * behind;
+
+			_rightFolehorn.X = (X + length * Math.Sin(HeadingRadians + (Math.PI / 5)) * behind);
+			_rightFolehorn.Y = (Y + length * Math.Cos(HeadingRadians + (Math.PI / 5)) * behind);
+	    }
 
         // Robot event handler, when the robot sees another robot
 		public override void OnScannedRobot(ScannedRobotEvent e)
@@ -98,7 +125,10 @@ namespace MyRobots
 
 	    public override void OnPaint(IGraphics graphics)
 	    {
-			graphics.DrawLine(new Pen(Color.Chocolate, 0.3f), new Point((int)_enemy.Offset.X, (int)_enemy.Offset.Y), new Point((int)X, (int)Y)); //FillRectangle(new HatchBrush(new HatchStyle(),Color.BlueViolet, Color.Black), new Rectangle((int)_enemy.Bearing,10,100,100));
+			graphics.DrawLine(new Pen(Color.Chartreuse, 0.3f), new Point((int)_leftFolehorn.X, (int)_leftFolehorn.Y), new Point((int)X, (int)Y));
+			graphics.DrawLine(new Pen(Color.Chocolate, 0.3f), new Point((int)_forwardFolehorn.X, (int)_forwardFolehorn.Y), new Point((int)X, (int)Y));
+			graphics.DrawLine(new Pen(Color.Crimson, 0.3f), new Point((int)_rightFolehorn.X, (int)_rightFolehorn.Y), new Point((int)X, (int)Y));
+			//graphics.DrawLine(new Pen(Color.Chocolate, 0.3f), new Point((int)_enemy.Offset.X, (int)_enemy.Offset.Y), new Point((int)X, (int)Y)); //FillRectangle(new HatchBrush(new HatchStyle(),Color.BlueViolet, Color.Black), new Rectangle((int)_enemy.Bearing,10,100,100));
 	    }
 
 	    public void CheckStateAndChange()
@@ -167,6 +197,8 @@ namespace MyRobots
 
             double turn = 0;
 
+
+
             switch (_driveState)
             {
                 case (DriveState.Follow):
@@ -174,17 +206,27 @@ namespace MyRobots
                     break;
                 case (DriveState.Poke):
                     turn = HeadingRadians + _enemy.BearingRadians - HeadingRadians;
-		            SetAhead(7);
+		            //SetAhead(0.2f);
                     break;
             }
 
-	        if (_driveState == DriveState.Poke)
-		        return;
 
 	        if (_enemy.Distance > 200 && _reverseDriving)
 		        _reverseDriving = false;
 
             SetTurnRightRadians(Utils.NormalRelativeAngle(turn));
+
+			if(_driveState != DriveState.Poke){
+				if (_leftFolehorn.X < 18 || _leftFolehorn.X > (BattleFieldWidth - 18))
+					SetTurnRight(Rules.MAX_TURN_RATE);
+				if (_leftFolehorn.Y < 18 || _leftFolehorn.Y > (BattleFieldHeight - 18))
+					SetTurnRight(Rules.MAX_TURN_RATE);
+
+				if (_rightFolehorn.X < 18 || _rightFolehorn.X > (BattleFieldWidth - 18))
+					SetTurnLeft(Rules.MAX_TURN_RATE);
+				if (_rightFolehorn.Y < 18 || _rightFolehorn.Y > (BattleFieldHeight - 18))
+					SetTurnLeft(Rules.MAX_TURN_RATE);
+			}
             if (!_reverseDriving)
                 SetAhead(Rand.Next(1, 30));
             else
