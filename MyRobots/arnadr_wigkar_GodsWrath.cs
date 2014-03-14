@@ -23,7 +23,7 @@ using Santom;
 
 namespace MyRobots
 {
-    public enum PilegrimageState
+    public enum PilgrimageState
     {
 		DesertWander,
         Retribution,
@@ -34,7 +34,7 @@ namespace MyRobots
 
     class arnadr_wigkar_GodsWrath : AdvancedRobot
     {
-        private static PilegrimageState _pilgrimageState = PilegrimageState.DesertWander;
+        private static PilgrimageState _pilgrimageState = PilgrimageState.DesertWander;
 
         private int _timesPassed = 0;
         private string _badGuy = "";
@@ -81,7 +81,7 @@ namespace MyRobots
 
 	        var length = 150;
 
-			if (_pilgrimageState == PilegrimageState.Temptation)
+			if (_pilgrimageState == PilgrimageState.Temptation)
 			{
 				length = 50;
 
@@ -90,7 +90,7 @@ namespace MyRobots
 				length = 0;
 			}
 
-		    if (_pilgrimageState == PilegrimageState.Salvation || _pilgrimageState == PilegrimageState.Retribution)
+		    if (_pilgrimageState == PilgrimageState.Salvation || _pilgrimageState == PilgrimageState.Retribution)
 		    {
 				length = 0;
 		    }
@@ -107,13 +107,13 @@ namespace MyRobots
 		{
 			if (e.Energy == 0)
 			{
-				_pilgrimageState = PilegrimageState.Salvation;
+				_pilgrimageState = PilgrimageState.Salvation;
 				_badGuy = e.Name;
                 SetAllColors(Color.White);
 			}
 			else if (e.Energy < 10 && e.Name.Equals(_badGuy))
 			{
-                _pilgrimageState = PilegrimageState.Temptation;
+                _pilgrimageState = PilgrimageState.Temptation;
                 SetAllColors(Color.HotPink);
 			}
 
@@ -123,7 +123,6 @@ namespace MyRobots
                 {
                     _badGuy = "";
                     _timesPassed = 0;
-                    Console.WriteLine("Wander");
                 }
                 if(!_badGuy.Equals(""))
 		            _timesPassed++;
@@ -145,7 +144,7 @@ namespace MyRobots
 	    public override void OnPaint(IGraphics graphics)
 	    {
 
-	        if (_pilgrimageState == PilegrimageState.Salvation)
+	        if (_pilgrimageState == PilgrimageState.Salvation)
 	        {
                 graphics.DrawLine(new Pen(Color.GhostWhite, 1f), new Point((int)X, (int)Y + 50), new Point((int)X, (int)Y + 100));
                 graphics.DrawLine(new Pen(Color.GhostWhite, 1f), new Point((int)X - 15, (int)Y + 85), new Point((int)X + 15, (int)Y + 85));
@@ -160,13 +159,19 @@ namespace MyRobots
 
 	    public void CheckStateAndChange()
         {
-	        if (_badGuy.Equals("") && _pilgrimageState != PilegrimageState.DesertWander)
+	        if (_badGuy.Equals("") && _pilgrimageState != PilgrimageState.DesertWander)
 	        {
-                _pilgrimageState = PilegrimageState.DesertWander;
+                _pilgrimageState = PilgrimageState.DesertWander;
                 SetAllColors(Color.Goldenrod);
 	        }
-            if (_hitThisFrame && _pilgrimageState != PilegrimageState.Retribution){
-                _pilgrimageState = PilegrimageState.Retribution;
+	        if (Energy <= 3 && _hitThisFrame)
+	        {
+	            _hitThisFrame = false;
+	            _pilgrimageState = PilgrimageState.Temptation;
+                SetAllColors(Color.HotPink);
+	        }
+            else if (_hitThisFrame && _pilgrimageState != PilgrimageState.Retribution){
+                _pilgrimageState = PilgrimageState.Retribution;
                 SetAllColors(Color.Red);
                 _hitThisFrame = false;
             }
@@ -195,7 +200,7 @@ namespace MyRobots
 
         public void GunEnemyLock()
         {
-            if (_pilgrimageState == PilegrimageState.DesertWander)
+            if (_pilgrimageState == PilgrimageState.DesertWander)
                 return;
 
             var gunturn = HeadingRadians + _enemy.BearingRadians - GunHeadingRadians + Beregner();
@@ -203,7 +208,7 @@ namespace MyRobots
             SetTurnGunRightRadians(Utils.NormalRelativeAngle(gunturn));
 
 
-            if (_pilgrimageState == PilegrimageState.Retribution)
+            if (_pilgrimageState == PilgrimageState.Retribution)
             {
                 int firePower = 1;
                 if (_enemy.Energy > 15)
@@ -231,17 +236,17 @@ namespace MyRobots
 
             switch (_pilgrimageState)
             {
-                case (PilegrimageState.Retribution):
+                case (PilgrimageState.Retribution):
                     turn = HeadingRadians + _enemy.BearingRadians - HeadingRadians;
                     if (_enemy.Distance > 200 && _reverseDriving)
                         _reverseDriving = false;
                     speed = 100;
                     break;
-                case (PilegrimageState.Salvation):
+                case (PilgrimageState.Salvation):
                     turn = HeadingRadians + _enemy.BearingRadians - HeadingRadians;
 		            SetAhead((_enemy.Distance/20) + 2);
                     break;
-                case (PilegrimageState.Temptation):
+                case (PilgrimageState.Temptation):
                     turn = HeadingRadians + _enemy.BearingRadians - HeadingRadians + Math.PI/2;
                     speed = Rand.Next(10, 40);
                     break;
@@ -264,7 +269,7 @@ namespace MyRobots
 			if (_frontAntennae.Y < 18 || _frontAntennae.Y > (BattleFieldHeight - 18))
 				_reverseDriving = !_reverseDriving;
 
-            if (_pilgrimageState == PilegrimageState.Salvation)
+            if (_pilgrimageState == PilgrimageState.Salvation)
                 return;
 
             if (!_reverseDriving)
@@ -303,7 +308,7 @@ namespace MyRobots
         public override void OnRoundEnded(RoundEndedEvent evnt)
         {
             _badGuy = "";
-            _pilgrimageState = PilegrimageState.DesertWander;
+            _pilgrimageState = PilgrimageState.DesertWander;
             _hitThisFrame = false;
             _timesPassed = 0;
         }
